@@ -1,16 +1,83 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <title>Widget Spot Picker</title>
     <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 10px; margin: 0; }
+        #map-container { position: relative; border: 2px solid #ccc; background: #fff; width: 100%; overflow: hidden; min-height: 200px; }
+        .item-produto { position: absolute; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; cursor: grab; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+        input, select { width: 100%; box-sizing: border-box; padding: 5px; }
+    </style>
 </head>
-<body style="background-color: blue; color: white;">
-    <h1>O Widget Carregou!</h1>
-    <script>
-        JFCustomWidget.subscribe("ready", function(){
-            document.body.style.backgroundColor = "green";
-            JFCustomWidget.sendData({ valid: true, value: "Teste OK" });
+<body>
+
+    <div id="map-container">
+        <img id="mapa" src="" style="display:none; width:100%;">
+    </div>
+
+    <table id="tabela">
+        <thead><tr id="thead-row"></tr></thead>
+        <tbody id="tabela-corpo"></tbody>
+    </table>
+
+<script>
+    let produtos = [];
+    let configAtivas = [];
+
+    // 1. Ouve quando o Jotform está pronto
+    JFCustomWidget.subscribe("ready", function(){
+        // 2. Busca as configurações feitas no Widget Builder
+        JFCustomWidget.getWidgetSettings(function(settings){
+            configAtivas = [];
+            if(settings.Spot_name) configAtivas.push("Nome");
+            if(settings.Spot_Size_X) configAtivas.push("L");
+            if(settings.Spot_Size_Y) configAtivas.push("A");
+            if(settings.Spot_Status) configAtivas.push("Status");
+            if(settings.Spot_Rotation) configAtivas.push("Rot");
+            if(settings.Spot_OBS) configAtivas.push("Obs");
+
+            // Renderiza cabeçalho da tabela dinamicamente
+            const head = document.getElementById('thead-row');
+            head.innerHTML = configAtivas.map(c => `<th>${c}</th>`).join('');
+            
+            console.log("Configurações carregadas:", configAtivas);
         });
-    </script>
+    });
+
+    // Função para adicionar uma linha na tabela quando um novo spot for criado
+    function adicionarLinhaTabela(p) {
+        const tbody = document.getElementById('tabela-corpo');
+        const tr = document.createElement('tr');
+        tr.id = 'tr-' + p.id;
+        
+        let html = '';
+        if(configAtivas.includes("Nome")) html += `<td><input type="text" value="${p.nome}" oninput="atualizar(${p.id}, 'nome', this.value)"></td>`;
+        if(configAtivas.includes("L")) html += `<td><input type="number" value="${p.w || 50}" oninput="atualizar(${p.id}, 'w', this.value)"></td>`;
+        if(configAtivas.includes("A")) html += `<td><input type="number" value="${p.h || 50}" oninput="atualizar(${p.id}, 'h', this.value)"></td>`;
+        if(configAtivas.includes("Status")) html += `<td><select onchange="atualizar(${p.id}, 'status', this.value)"><option value="disponivel">Disp</option><option value="reservado">Res</option><option value="vendido">Vend</option></select></td>`;
+        if(configAtivas.includes("Rot")) html += `<td><input type="number" value="${p.rot || 0}" oninput="atualizar(${p.id}, 'rot', this.value)"></td>`;
+        if(configAtivas.includes("Obs")) html += `<td><input type="text" value="${p.obs || ''}" oninput="atualizar(${p.id}, 'obs', this.value)"></td>`;
+        
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+    }
+
+    // Função de atualização de dados enviada ao Jotform
+    function atualizar(id, campo, valor) {
+        let prod = produtos.find(p => p.id == id);
+        if(!prod) {
+            prod = { id: id, nome: "Prod", w: 50, h: 50, rot: 0, status: 'disponivel', obs: '', xPct: 10, yPct: 10 };
+            produtos.push(prod);
+        }
+        prod[campo] = valor;
+        
+        // Envia os dados para o Jotform salvar no formulário
+        JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
+    }
+</script>
 </body>
 </html>
