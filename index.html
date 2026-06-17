@@ -1,15 +1,87 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <title>Widget Spot Picker</title>
+    <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
     <style>
-        body { background: lightblue; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 10px; margin: 0; overflow-x: hidden; }
+        #map-container { position: relative; border: 2px solid #ccc; background: #fff; width: 100%; min-height: 200px; transform-origin: top left; }
+        .item-produto { position: absolute; border: 2px solid #333; background: #28a745; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: grab; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+        input, select { width: 100%; box-sizing: border-box; padding: 5px; }
     </style>
 </head>
 <body>
-    <h1>O Mapa deveria estar aqui</h1>
-    <div style="width: 300px; height: 300px; background: white; margin: 0 auto; border: 5px solid black;">
-        <p>Se você vê este quadrado branco, o seu HTML está carregando!</p>
+
+    <div id="map-container">
+        <img id="mapa" src="" style="display:none; width:100%;">
     </div>
+
+    <table id="tabela">
+        <thead><tr id="thead-row"></tr></thead>
+        <tbody id="tabela-corpo"></tbody>
+    </table>
+
+<script>
+    let produtos = [];
+    let configAtivas = ["Nome", "L", "A", "Status", "Rot", "Obs"]; // Campos padrão
+
+    function ajustarTamanho() {
+        // Envia comando ao Jotform para ajustar a altura
+        const altura = document.body.scrollHeight + 20;
+        JFCustomWidget.requestFrameResize({ height: altura });
+    }
+
+    JFCustomWidget.subscribe("ready", function(){
+        // 1. Aplica Escala se existir na URL (ex: index.html?escala=80)
+        const params = new URLSearchParams(window.location.search);
+        const escala = params.get('escala') || 100;
+        document.getElementById('map-container').style.transform = `scale(${escala / 100})`;
+        
+        // 2. Monta cabeçalho
+        const head = document.getElementById('thead-row');
+        head.innerHTML = configAtivas.map(c => `<th>${c}</th>`).join('');
+        
+        ajustarTamanho();
+    });
+
+    document.getElementById('map-container').addEventListener('click', function(e) {
+        const id = Date.now();
+        const novoProd = { id, nome: "Novo", w: 50, h: 50, rot: 0, status: 'disponivel', obs: '' };
+        produtos.push(novoProd);
+        adicionarLinhaTabela(novoProd);
+        JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
+        ajustarTamanho();
+    });
+
+    function adicionarLinhaTabela(p) {
+        const tbody = document.getElementById('tabela-corpo');
+        const tr = document.createElement('tr');
+        tr.id = 'tr-' + p.id;
+        
+        let html = configAtivas.map(campo => {
+            if(campo === "Nome") return `<td><input type="text" value="${p.nome}" oninput="atualizar(${p.id}, 'nome', this.value)"></td>`;
+            if(campo === "L") return `<td><input type="number" value="${p.w}" oninput="atualizar(${p.id}, 'w', this.value)"></td>`;
+            if(campo === "A") return `<td><input type="number" value="${p.h}" oninput="atualizar(${p.id}, 'h', this.value)"></td>`;
+            if(campo === "Status") return `<td><select onchange="atualizar(${p.id}, 'status', this.value)"><option value="disponivel">Disp</option><option value="reservado">Res</option></select></td>`;
+            if(campo === "Rot") return `<td><input type="number" value="${p.rot}" oninput="atualizar(${p.id}, 'rot', this.value)"></td>`;
+            if(campo === "Obs") return `<td><input type="text" value="${p.obs}" oninput="atualizar(${p.id}, 'obs', this.value)"></td>`;
+        }).join('');
+        
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+        ajustarTamanho();
+    }
+
+    function atualizar(id, campo, valor) {
+        let prod = produtos.find(p => p.id == id);
+        if(prod) {
+            prod[campo] = valor;
+            JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
+        }
+    }
+</script>
 </body>
 </html>
