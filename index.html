@@ -1,139 +1,71 @@
 ﻿<!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Widget Spot Picker Pro</title>
-    <script src="https://js.jotform.com/JotformCustomWidget.min.js"></script>
+    <title>Widget Spot Picker</title>
+    <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        #app-wrapper { display: flex; gap: 20px; }
-        #map-container { position: relative; border: 2px solid #ccc; background: #fff; overflow: hidden; }
-        #map-container.criacao-ativa { cursor: crosshair; }
-        #mapa { display: block; width: 100%; height: auto; }
-        
-        .item-produto {
-            position: absolute; border: 2px solid #333;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px; color: white; font-weight: bold;
-            cursor: grab; transition: border 0.2s;
-        }
-        .item-produto.selecionado { border: 3px solid #007bff; z-index: 10; }
-        
-        #lista-lateral { width: 850px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; font-size: 11px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 4px; }
-        .btn-ativo { background-color: #28a745; color: white; }
+        body { font-family: sans-serif; background: #f4f4f9; padding: 10px; }
+        #map-container { position: relative; border: 2px solid #ccc; background: #fff; width: 100%; overflow: hidden; }
+        .item-produto { position: absolute; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; cursor: grab; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 5px; font-size: 11px; }
     </style>
 </head>
 <body>
 
-<div id="app-wrapper">
-    <div>
-        <label><b>1. Planta:</b></label><br>
-        <input type="file" id="upload" accept="image/*"><br><br>
-        <label>Zoom do Mapa:</label>
-        <input type="range" min="50" max="100" value="100" oninput="document.getElementById('map-container').style.width = this.value + '%'">
-        <br><br>
-        <button id="btn-toggle" onclick="toggleCriacao()">Ativar Criar Forma</button>
-        <br><br>
-        <div id="map-container" style="width: 100%;"><img id="mapa" src="" alt="Mapa" style="display:none;"></div>
-    </div>
-
-    <div id="lista-lateral">
-        <h3>Spot Picker - Gerenciador</h3>
-        <table>
-            <thead><tr><th>Nome</th><th>L</th><th>A</th><th>Status</th><th>Rot</th><th>Obs</th></tr></thead>
-            <tbody id="tabela-corpo"></tbody>
-        </table>
-    </div>
-</div>
+    <div id="map-container"><img id="mapa" src="" style="display:none; width:100%;"></div>
+    <table id="tabela">
+        <thead><tr id="thead-row"></tr></thead>
+        <tbody id="tabela-corpo"></tbody>
+    </table>
 
 <script>
     let produtos = [];
-    let modoCriacaoAtivo = false;
-    let arrastando = null;
-    const container = document.getElementById('map-container');
-    const tabela = document.getElementById('tabela-corpo');
+    let configAtivas = [];
 
-    function toggleCriacao() {
-        modoCriacaoAtivo = !modoCriacaoAtivo;
-        container.className = modoCriacaoAtivo ? "criacao-ativa" : "";
-        document.getElementById('btn-toggle').innerText = modoCriacaoAtivo ? "Modo: Criando..." : "Ativar Criar Forma";
-    }
+    JFCustomWidget.subscribe("ready", function(){
+        // Busca as configurações definidas no Widget Builder
+        JFCustomWidget.getWidgetSettings(function(settings){
+            // Verifica quais parâmetros estão ativos (o Jotform retorna string ou vazio)
+            configAtivas = [];
+            if(settings.Spot_name) configAtivas.push("Nome");
+            if(settings.Spot_Size_X) configAtivas.push("L");
+            if(settings.Spot_Size_Y) configAtivas.push("A");
+            if(settings.Spot_Status) configAtivas.push("Status");
+            if(settings.Spot_Rotation) configAtivas.push("Rot");
+            if(settings.Spot_OBS) configAtivas.push("Obs");
 
-    // Criar nova forma
-    container.addEventListener('click', function(e) {
-        if (!modoCriacaoAtivo || e.target !== container && e.target.id !== 'mapa') return;
-        const rect = container.getBoundingClientRect();
-        const id = Date.now();
-        // Salva em porcentagem para manter proporcionalidade
-        const xPct = ((e.clientX - rect.left) / rect.width) * 100;
-        const yPct = ((e.clientY - rect.top) / rect.height) * 100;
-
-        produtos.push({ id, nome: "Prod", w: 50, h: 50, rot: 0, status: 'disponivel', obs: '', xPct, yPct });
-        renderizar();
-    });
-
-    // Lógica de Arrastar
-    window.addEventListener('mousemove', (e) => {
-        if (!arrastando || modoCriacaoAtivo) return;
-        const rect = container.getBoundingClientRect();
-        const prod = produtos.find(p => p.id == arrastando);
-        prod.xPct = ((e.clientX - rect.left) / rect.width) * 100;
-        prod.yPct = ((e.clientY - rect.top) / rect.height) * 100;
-        renderizar();
-    });
-
-    window.addEventListener('mouseup', () => arrastando = null);
-
-    function renderizar() {
-        // Limpa mapa e tabela (mantendo foco no input se necessário)
-        container.querySelectorAll('.item-produto').forEach(el => el.remove());
-        tabela.innerHTML = '';
-
-        produtos.forEach(p => {
-            // Renderiza forma
-            const q = document.createElement('div');
-            q.className = 'item-produto' + (arrastando == p.id ? ' selecionado' : '');
-            q.id = 'q-' + p.id;
-            q.style.left = p.xPct + '%';
-            q.style.top = p.yPct + '%';
-            q.style.width = p.w + 'px';
-            q.style.height = p.h + 'px';
-            q.style.transform = `rotate(${p.rot}deg)`;
-            q.style.background = { disponivel: '#28a745', reservado: '#ffc107', vendido: '#dc3545' }[p.status] || '#333';
-            q.innerText = p.nome;
-            q.title = p.obs;
-            q.onmousedown = () => arrastando = p.id;
-            container.appendChild(q);
-
-            // Renderiza linha da tabela
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="text" value="${p.nome}" oninput="atualizar(${p.id}, 'nome', this.value)"></td>
-                <td><input type="number" value="${p.w}" oninput="atualizar(${p.id}, 'w', this.value)" style="width:40px"></td>
-                <td><input type="number" value="${p.h}" oninput="atualizar(${p.id}, 'h', this.value)" style="width:40px"></td>
-                <td><select onchange="atualizar(${p.id}, 'status', this.value)"><option value="disponivel" ${p.status=='disponivel'?'selected':''}>Disp</option><option value="reservado" ${p.status=='reservado'?'selected':''}>Res</option><option value="vendido" ${p.status=='vendido'?'selected':''}>Vend</option></select></td>
-                <td><input type="number" value="${p.rot}" oninput="atualizar(${p.id}, 'rot', this.value)" style="width:40px"></td>
-                <td><input type="text" value="${p.obs}" oninput="atualizar(${p.id}, 'obs', this.value)"></td>
-            `;
-            tabela.appendChild(tr);
+            // Monta cabeçalho
+            const head = document.getElementById('thead-row');
+            head.innerHTML = configAtivas.map(c => `<th>${c}</th>`).join('');
         });
-        JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
+    });
+
+    function adicionarLinhaTabela(p) {
+        const tbody = document.getElementById('tabela-corpo');
+        const tr = document.createElement('tr');
+        tr.id = 'tr-' + p.id;
+        
+        let html = '';
+        if(configAtivas.includes("Nome")) html += `<td><input type="text" value="${p.nome}" oninput="atualizar(${p.id}, 'nome', this.value)"></td>`;
+        if(configAtivas.includes("L")) html += `<td><input type="number" value="${p.w}" oninput="atualizar(${p.id}, 'w', this.value)"></td>`;
+        if(configAtivas.includes("A")) html += `<td><input type="number" value="${p.h}" oninput="atualizar(${p.id}, 'h', this.value)"></td>`;
+        if(configAtivas.includes("Status")) html += `<td><select onchange="atualizar(${p.id}, 'status', this.value)"><option value="disponivel">Disp</option><option value="reservado">Res</option></select></td>`;
+        if(configAtivas.includes("Rot")) html += `<td><input type="number" value="${p.rot}" oninput="atualizar(${p.id}, 'rot', this.value)"></td>`;
+        if(configAtivas.includes("Obs")) html += `<td><input type="text" value="${p.obs}" oninput="atualizar(${p.id}, 'obs', this.value)"></td>`;
+        
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
     }
 
     function atualizar(id, campo, valor) {
         const prod = produtos.find(p => p.id == id);
-        prod[campo] = valor;
-        renderizar();
+        if(prod) {
+            prod[campo] = valor;
+            JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
+        }
     }
-
-    document.getElementById('upload').addEventListener('change', function(e) {
-        const reader = new FileReader();
-        reader.onload = (ev) => { const m = document.getElementById('mapa'); m.src = ev.target.result; m.style.display = 'block'; };
-        reader.readAsDataURL(e.target.files[0]);
-    });
 </script>
 </body>
 </html>
