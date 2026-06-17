@@ -1,88 +1,15 @@
 ﻿<!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Widget Spot Picker</title>
-    <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 15px; margin: 0; }
-        #map-container { position: relative; border: 2px solid #ccc; background: #fff; width: 100%; overflow: hidden; min-height: 300px; cursor: crosshair; }
-        .item-produto { position: absolute; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; cursor: grab; font-weight: bold; background: #28a745; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-        input, select { width: 100%; box-sizing: border-box; padding: 5px; }
+        body { background: lightblue; font-family: sans-serif; text-align: center; padding-top: 50px; }
     </style>
 </head>
 <body>
-
-    <div id="map-container">
-        <img id="mapa" src="" style="display:none; width:100%;">
+    <h1>O Mapa deveria estar aqui</h1>
+    <div style="width: 300px; height: 300px; background: white; margin: 0 auto; border: 5px solid black;">
+        <p>Se você vê este quadrado branco, o seu HTML está carregando!</p>
     </div>
-
-    <table id="tabela">
-        <thead><tr id="thead-row"></tr></thead>
-        <tbody id="tabela-corpo"></tbody>
-    </table>
-
-<script>
-    let produtos = [];
-    let configAtivas = [];
-
-    // Aguarda o Jotform carregar o widget
-    JFCustomWidget.subscribe("ready", function(){
-        // Avisa ao Jotform para ajustar o tamanho do iframe se necessário
-        JFCustomWidget.requestFrameResize({ height: 800 });
-
-        JFCustomWidget.getWidgetSettings(function(settings){
-            configAtivas = [];
-            // Verifica os campos configurados no Widget Builder
-            if(settings.Spot_name) configAtivas.push("Nome");
-            if(settings.Spot_Size_X) configAtivas.push("L");
-            if(settings.Spot_Size_Y) configAtivas.push("A");
-            if(settings.Spot_Status) configAtivas.push("Status");
-            if(settings.Spot_Rotation) configAtivas.push("Rot");
-            if(settings.Spot_OBS) configAtivas.push("Obs");
-
-            const head = document.getElementById('thead-row');
-            head.innerHTML = configAtivas.map(c => `<th>${c}</th>`).join('');
-        });
-    });
-
-    // Ao clicar no mapa, cria um novo spot
-    document.getElementById('map-container').addEventListener('click', function(e) {
-        const id = Date.now();
-        const novoProd = { id, nome: "Novo", w: 50, h: 50, rot: 0, status: 'disponivel', obs: '' };
-        produtos.push(novoProd);
-        
-        adicionarLinhaTabela(novoProd);
-        // Atualiza o Jotform
-        JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
-    });
-
-    function adicionarLinhaTabela(p) {
-        const tbody = document.getElementById('tabela-corpo');
-        const tr = document.createElement('tr');
-        tr.id = 'tr-' + p.id;
-        
-        let html = '';
-        if(configAtivas.includes("Nome")) html += `<td><input type="text" value="${p.nome}" oninput="atualizar(${p.id}, 'nome', this.value)"></td>`;
-        if(configAtivas.includes("L")) html += `<td><input type="number" value="${p.w}" oninput="atualizar(${p.id}, 'w', this.value)"></td>`;
-        if(configAtivas.includes("A")) html += `<td><input type="number" value="${p.h}" oninput="atualizar(${p.id}, 'h', this.value)"></td>`;
-        if(configAtivas.includes("Status")) html += `<td><select onchange="atualizar(${p.id}, 'status', this.value)"><option value="disponivel">Disp</option><option value="reservado">Res</option><option value="vendido">Vend</option></select></td>`;
-        if(configAtivas.includes("Rot")) html += `<td><input type="number" value="${p.rot}" oninput="atualizar(${p.id}, 'rot', this.value)"></td>`;
-        if(configAtivas.includes("Obs")) html += `<td><input type="text" value="${p.obs}" oninput="atualizar(${p.id}, 'obs', this.value)"></td>`;
-        
-        tr.innerHTML = html;
-        tbody.appendChild(tr);
-    }
-
-    function atualizar(id, campo, valor) {
-        let prod = produtos.find(p => p.id == id);
-        if(prod) {
-            prod[campo] = valor;
-            JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
-        }
-    }
-</script>
 </body>
 </html>
