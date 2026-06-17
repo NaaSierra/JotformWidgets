@@ -1,1 +1,9 @@
-﻿.vs/JotformWidgets.slnx/FileContentIndex/778e7f89-815c-4489-bb1b-480b2c30bf2a.vsidx
+# Pastas do Visual Studio
+.vs/
+*.vsidx
+*.suo
+*.user
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
