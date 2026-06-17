@@ -1,71 +1,16 @@
 ﻿<!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Widget Spot Picker</title>
     <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
-    <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 10px; }
-        #map-container { position: relative; border: 2px solid #ccc; background: #fff; width: 100%; overflow: hidden; }
-        .item-produto { position: absolute; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; cursor: grab; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
-        th, td { border: 1px solid #ddd; padding: 5px; font-size: 11px; }
-    </style>
 </head>
-<body>
-
-    <div id="map-container"><img id="mapa" src="" style="display:none; width:100%;"></div>
-    <table id="tabela">
-        <thead><tr id="thead-row"></tr></thead>
-        <tbody id="tabela-corpo"></tbody>
-    </table>
-
-<script>
-    let produtos = [];
-    let configAtivas = [];
-
-    JFCustomWidget.subscribe("ready", function(){
-        // Busca as configurações definidas no Widget Builder
-        JFCustomWidget.getWidgetSettings(function(settings){
-            // Verifica quais parâmetros estão ativos (o Jotform retorna string ou vazio)
-            configAtivas = [];
-            if(settings.Spot_name) configAtivas.push("Nome");
-            if(settings.Spot_Size_X) configAtivas.push("L");
-            if(settings.Spot_Size_Y) configAtivas.push("A");
-            if(settings.Spot_Status) configAtivas.push("Status");
-            if(settings.Spot_Rotation) configAtivas.push("Rot");
-            if(settings.Spot_OBS) configAtivas.push("Obs");
-
-            // Monta cabeçalho
-            const head = document.getElementById('thead-row');
-            head.innerHTML = configAtivas.map(c => `<th>${c}</th>`).join('');
+<body style="background-color: blue; color: white;">
+    <h1>O Widget Carregou!</h1>
+    <script>
+        JFCustomWidget.subscribe("ready", function(){
+            document.body.style.backgroundColor = "green";
+            JFCustomWidget.sendData({ valid: true, value: "Teste OK" });
         });
-    });
-
-    function adicionarLinhaTabela(p) {
-        const tbody = document.getElementById('tabela-corpo');
-        const tr = document.createElement('tr');
-        tr.id = 'tr-' + p.id;
-        
-        let html = '';
-        if(configAtivas.includes("Nome")) html += `<td><input type="text" value="${p.nome}" oninput="atualizar(${p.id}, 'nome', this.value)"></td>`;
-        if(configAtivas.includes("L")) html += `<td><input type="number" value="${p.w}" oninput="atualizar(${p.id}, 'w', this.value)"></td>`;
-        if(configAtivas.includes("A")) html += `<td><input type="number" value="${p.h}" oninput="atualizar(${p.id}, 'h', this.value)"></td>`;
-        if(configAtivas.includes("Status")) html += `<td><select onchange="atualizar(${p.id}, 'status', this.value)"><option value="disponivel">Disp</option><option value="reservado">Res</option></select></td>`;
-        if(configAtivas.includes("Rot")) html += `<td><input type="number" value="${p.rot}" oninput="atualizar(${p.id}, 'rot', this.value)"></td>`;
-        if(configAtivas.includes("Obs")) html += `<td><input type="text" value="${p.obs}" oninput="atualizar(${p.id}, 'obs', this.value)"></td>`;
-        
-        tr.innerHTML = html;
-        tbody.appendChild(tr);
-    }
-
-    function atualizar(id, campo, valor) {
-        const prod = produtos.find(p => p.id == id);
-        if(prod) {
-            prod[campo] = valor;
-            JFCustomWidget.sendData({ valid: true, value: JSON.stringify(produtos) });
-        }
-    }
-</script>
+    </script>
 </body>
 </html>
